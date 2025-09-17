@@ -54,9 +54,12 @@ def test_convert_settlement_period_to_time():
 
 
 @patch("gridwatch_lambda.InfluxDBClient")
-def test_lambda_handler_s3_influx(mock_influx):
+def test_lambda_handler_s3_influx(mock_influx_client):
+    mock_client_instance = MagicMock()
     mock_write_api = MagicMock()
-    mock_influx.return_value.write_api.return_value = mock_write_api
+
+    mock_influx_client.return_value.__enter__.return_value = mock_client_instance
+    mock_client_instance.write_api.return_value = mock_write_api
 
     response = lf.lambda_handler({}, {})
     body = response["body"]
@@ -64,7 +67,7 @@ def test_lambda_handler_s3_influx(mock_influx):
     assert "Successfully ingested" in body
     mock_write_api.write.assert_called_once()
     args, kwargs = mock_write_api.write.call_args
-    assert len(kwargs["record"]) > 0
+    assert len(kwargs["record"]) == 3
 
 
 def test_dataframe_mean_imputation():
@@ -98,7 +101,7 @@ def test_create_influx_points_structure():
 
 
 @patch("gridwatch_lambda.InfluxDBClient")
-def test_lambda_handler_with_empty_csv(mock_influx):
+def test_lambda_handler_with_empty_csv(mock_influx_client):
     s3_client = boto3.client("s3", region_name=REGION)
     s3_client.put_object(
         Bucket=TEST_BUCKET,
@@ -106,10 +109,16 @@ def test_lambda_handler_with_empty_csv(mock_influx):
         Body="SETTLEMENT_DATE,SETTLEMENT_PERIOD,ND,TSD,VIKING_FLOW\n",
     )
 
+    mock_client_instance = MagicMock()
     mock_write_api = MagicMock()
-    mock_influx.return_value.write_api.return_value = mock_write_api
+
+    mock_influx_client.return_value.__enter__.return_value = mock_client_instance
+    mock_client_instance.write_api.return_value = mock_write_api
 
     response = lf.lambda_handler({}, {})
     body = response["body"]
 
     assert "0 points" in body
+    mock_write_api.write.assert_called_once_with(
+        bucket="test-bucket", org="test-org", record=[]
+    )
