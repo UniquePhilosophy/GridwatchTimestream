@@ -2,3 +2,5 @@ gridwatchTimestreamVenv/
 .env
 __pycache__/
 .pytest_cache/
+.aws/
+.docker/

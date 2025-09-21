@@ -1,7 +1,7 @@
 import boto3
 import pandas as pd
 import io
-import os
+import os, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point, WritePrecision
@@ -10,14 +10,18 @@ load_dotenv()
 
 S3_BUCKET = os.environ.get("S3_BUCKET")
 S3_KEY = os.environ.get("S3_KEY")
-REGION_NAME = os.environ.get("AWS_REGION", "eu-west-2")
 
 INFLUX_URL = os.environ.get("INFLUX_URL")
 INFLUX_TOKEN = os.environ.get("INFLUX_TOKEN")
 INFLUX_ORG = os.environ.get("INFLUX_ORG")
 INFLUX_BUCKET = os.environ.get("INFLUX_BUCKET")
 
-s3_client = boto3.client("s3", region_name=REGION_NAME)
+s3_client = boto3.client("s3")
+
+def lambda_handler(event, context):
+    url = os.environ['INFLUX_URL'] + "/health"
+    r = requests.get(url, timeout=5)
+    return {"status": r.status_code, "body": r.text}
 
 # --- HELPER FUNCTIONS ---
 def convert_settlement_period_to_time(settlement_period):
