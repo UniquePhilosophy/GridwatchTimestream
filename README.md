@@ -1,6 +1,6 @@
 # Project GridWatch: High-Performance Time-Series Data Engineering on AWS
 
-![Architecture Diagram](link_to_your_diagram.png)
+![Architecture Diagram](gridwatch_timestream_architecture.png)
 
 ## Overview
 
@@ -33,31 +33,29 @@ One year of UK energy demand data was ingested into an InfluxDB table. Two logic
 
 ### The Computer Science Reasoning: Why is there a difference?
 
-It's not just "fewer steps". The performance gap reveals how database query engines work under the hood. The difference can be explained with an analogy: **a specialized machine vs. a general-purpose robot.**
+It's not just "fewer steps". The performance gap reveals how database query engines work at a lower level. The difference is that one of the queries is activating a low-level function whereas the un-optimized query has a higher-level layer which first saps usage resources.
 
 #### 1. The Optimized `mean()` - "The Specialized Machine"
 
-When you use a built-in function like `mean()`, you are not just running a simple script. You are invoking a highly optimized routine written by the database developers in a low-level language like Go or C++. This code is:
+Using a built-in function like `mean()`, a highly optimized routine written by the database developers in a low-level language like Go or C++ is invoked. This code is:
 * **Pre-compiled and Optimized:** It's translated directly into machine code that runs at maximum speed on the server's CPU.
 * **Aware of Data Layout:** It knows how the data is stored on disk and in memory and can access it in the most efficient way possible.
 * **Capable of Vectorization (SIMD):** It can use special CPU instructions to perform the same operation (like addition) on multiple numbers simultaneously, dramatically speeding up the calculation.
 
-This is a specialized machine built for one purpose—calculating an average—and it does so with extreme efficiency.
+This is a specialized machine built for one purpose: calculating an average—and it does so with extreme efficiency.
 
 #### 2. The Unoptimized `reduce()` - "The General-Purpose Robot"
 
-The `reduce()` function is a powerful, generic iterator. However, it is a high-level abstraction. When you use it, the query engine must:
-* **Interpret Your Logic for Every Row:** It cannot use a single, pre-compiled routine. It must read your instructions (`sum: r._value + accumulator.sum`), apply them to the first row, update the accumulator, then repeat the entire process for the second row, and so on.
+The `reduce()` function is a powerful, generic iterator. However, it is a high-level abstraction. When used, the query engine must:
+* **Interpret the Logic for Every Row:** It cannot use a single, pre-compiled routine. It must read the instructions (`sum: r._value + accumulator.sum`), apply them to the first row, update the accumulator, then repeat the entire process for the second row, and so on.
 * **Incur Overhead:** Every iteration involves function call overhead and context switching, which, when repeated millions of times, adds up to significant delays.
 * **Forfeit Low-Level Optimizations:** This row-by-row, interpreted approach prevents the engine from using the most powerful CPU-level tricks like SIMD.
 
-This is a general-purpose robot. You can program it to do anything, but it will perform a specific task far more slowly than a specialized machine.
+This is a general-purpose algorithm, it can be programmed for many use cases, but it will perform a specific task far more slowly than a specialized machine.
 
 ### Results
 
-The results clearly support the hypothesis. The query using the manual `reduce()` function to calculate the mean was, on average, **XX.X% slower** than the query using the optimized, built-in `mean()` function.
-
-*(Note: Replace XX.X% with the value from your script's output!)*
+The results clearly support the hypothesis. The query using the manual `reduce()` function to calculate the mean was, on average, **~53% slower** than the query using the optimized, built-in `mean()` function.
 
 ![Benchmark Results Chart](benchmark_results.png)
 
@@ -66,16 +64,3 @@ The results clearly support the hypothesis. The query using the manual `reduce()
 This experiment quantitatively proves that effective data engineering goes beyond just writing logically correct queries. A key responsibility is to understand the tools and write *idiomatic* queries that allow the database engine to use its most powerful, optimized execution paths.
 
 By choosing the built-in `mean()` function over a manual `reduce()` implementation, a data engineer leverages the deep, low-level optimizations built into the database, resulting in faster, cheaper, and more scalable data processing.
-
-## How to Run This Project
-
-1.  Clone the repository: `git clone ...`
-2.  Set up AWS credentials and a `.env` file with your InfluxDB details.
-3.  (Add your specific setup steps here...)
-
-## Cost Management
-
-This entire project was designed to be completed for under £5.
--   AWS services like Lambda and Timestream have generous free tiers.
--   The dataset is small (~50MB), so S3 and data transfer costs are negligible.
--   **IMPORTANT:** All resources were torn down immediately after the project was completed to prevent incurring further costs.
