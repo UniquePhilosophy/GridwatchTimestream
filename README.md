@@ -35,7 +35,7 @@ One year of UK energy demand data was ingested into an InfluxDB table. Two logic
 
 It's not just "fewer steps". The performance gap reveals how database query engines work at a lower level. The difference is that one of the queries is activating a low-level function whereas the un-optimized query has a higher-level layer which first saps usage resources.
 
-#### 1. The Optimized `mean()` - "The Specialized Machine"
+#### 1. The Optimized `mean()`
 
 Using a built-in function like `mean()`, a highly optimized routine written by the database developers in a low-level language like Go or C++ is invoked. This code is:
 * **Pre-compiled and Optimized:** It's translated directly into machine code that runs at maximum speed on the server's CPU.
@@ -44,7 +44,7 @@ Using a built-in function like `mean()`, a highly optimized routine written by t
 
 This is a specialized machine built for one purpose: calculating an average—and it does so with extreme efficiency.
 
-#### 2. The Unoptimized `reduce()` - "The General-Purpose Robot"
+#### 2. The Unoptimized `reduce()`
 
 The `reduce()` function is a powerful, generic iterator. However, it is a high-level abstraction. When used, the query engine must:
 * **Interpret the Logic for Every Row:** It cannot use a single, pre-compiled routine. It must read the instructions (`sum: r._value + accumulator.sum`), apply them to the first row, update the accumulator, then repeat the entire process for the second row, and so on.
